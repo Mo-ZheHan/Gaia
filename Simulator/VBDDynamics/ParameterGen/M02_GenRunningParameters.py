@@ -15,10 +15,10 @@ exeNames = [
 
 machines = {
     "AnkaPC00": {
-        "binaryFile": r"F:\Code\Projects\Graphics\VBDDynamics\Release\VBDDynamics.exe",
+        "binaryFile": r"C:\Users\HP-17\source\repos\Gaia\Simulator\VBDDynamics\cmake-build-release-visual-studio\Release\VBDDynamics.exe",
         "RepoPath": str(pathlib.Path(__file__).parent.parent.parent.parent.resolve()),
         "OutputDirs": [
-            r"E:\Data2\VBDSimulation",
+            r"C:\Users\HP-17\source\repos\Gaia\Simulator\VBDDynamics\outputs",
         ]
     },
 }
