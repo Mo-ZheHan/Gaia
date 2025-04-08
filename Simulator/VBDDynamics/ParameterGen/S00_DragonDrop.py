@@ -1,84 +1,100 @@
 from M01_Parameters import *
 from M02_GenRunningParameters import *
 
-if __name__ == "__main__":
+def getModelInfoDragon(modelExample, materialType="NeoHookean"):
+    """创建龙模型信息"""
+    model = copy.deepcopy(modelExample)
+    model['path'] = "${REPO_ROOT}/Data/mesh_models/Dragon/dragon_drop_low.t"
+    model['verticesColoringCategoriesPath'] = model['path'] + ".vertexColoring.json"
+
+    # 物理材质参数
+    model['miu'] = 1e9
+    model['lmbd'] = 1e10
+    model['density'] = 100
+
+    if materialType == "NeoHookean":
+        model["materialName"] = "NeoHookean"
+    else:
+        print("Unrecognized material name! Use default material: NeoHookean")
+        model["materialName"] = "NeoHookean"
+
+    return model
+
+if __name__ == '__main__':
     genFileName = Path(__file__).stem
 
+    # 设置使用的机器配置
     machineName = "AnkaPC00"
-    binaryFile = machines[machineName]["binaryFile"]
-
-    # run = False
     run = True
 
+    # 创建模型列表
     models = []
-    numModels = 1  # 只有一个龙模型
 
-    # 设置模型初始高度
-    modelHeight = 10.0
+    # 添加龙模型
+    dragon_model = getModelInfoDragon(modelExample)
+    dragon_model['scale'] = [1.0, 1.0, 1.0]
+    dragon_model['translation'] = [0, 0.4, 0]
+    dragon_model['initialVelocity'] = [0, 0, 0]
 
-    model = copy.deepcopy(modelExample)
-    # 设置龙模型路径
-    model["path"] = "${REPO_ROOT}/Data/mesh_models/Dragon/dragon_drop_low.t"
-    model["verticesColoringCategoriesPath"] = (
-        "${REPO_ROOT}/Data/mesh_models/Dragon/dragon_drop_low.t.vertexColoring.json"
-    )
-    model["materialName"] = "NeoHookean"
-    model["density"] = 50
-    model["miu"] = 2e7  # 弹性参数
-    model["lmbd"] = 1e8  # 弹性参数
+    # 添加阻尼和摩擦参数
+    dragon_model["dampingHydrostatic"] = 1e-7
+    dragon_model["dampingDeviatoric"] = 1e-7
+    dragon_model['frictionDynamic'] = 0.15
+    dragon_model["exponentialVelDamping"] = 0.95
+    dragon_model["constantVelDamping"] = 0.01
+    dragon_model["maxVelocityMagnitude"] = 25
 
-    # 设置模型位置、缩放和初始速度
-    model["translation"] = [0, modelHeight, 0]  # 放置在一定高度
-    model["scale"] = [1.0, 1.0, 1.0]  # 可根据龙模型大小调整
-    model["initialVelocity"] = [0, -5, 0]  # 初始下落速度
+    models.append(dragon_model)
 
-    # 设置物理参数
-    model["exponentialVelDamping"] = 0.95
-    model["constantVelDamping"] = 0.02
-    model["frictionDynamic"] = 0.1
-    model["dampingHydrostatic"] = 1e-7
-    model["dampingDeviatoric"] = 1e-7
-    model["frictionEpsV"] = 0.01
-
-    models.append(model)
-
+    # 创建模型信息
     modelsInfo = {"Models": models}
 
-    # 设置物理环境参数
+    # 设置物理参数
     parameters = getPhysicsParametersForTest(parametersExample)
-    parameters["PhysicsParams"]["numFrames"] = 3000
-    parameters["PhysicsParams"]["worldBounds"] = [[-20, 0, -20], [20, 30, 20]]
-    recoveryState = None
+    parameters["PhysicsParams"]["numFrames"] = 600  # 模拟帧数
+    parameters["PhysicsParams"]["checkAndUpdateWorldBounds"] = True
+    parameters["PhysicsParams"]["worldBounds"] = [
+        [-10.0, 0.0, -10.0],
+        [10.0, 10.0, 10.0]
+    ]
 
-    experimentName = "Dragon_Drop_GPU"
-    parameters["PhysicsParams"]["gravity"] = [0.0, -10.0, 0.0]
+    # 设置碰撞参数
     parameters["CollisionParams"]["allowDCD"] = True
     parameters["CollisionParams"]["allowCCD"] = True
+    parameters["CollisionParams"]["restPoseCloestPoint"] = True
+
+    # 设置其他物理参数
+    parameters["PhysicsParams"]["ccdBVHRebuildSteps"] = 50
+    parameters["PhysicsParams"]["dcdTetMeshSceneBVHRebuildSteps"] = 50
+    parameters["PhysicsParams"]["dcdSurfaceSceneBVHRebuildSteps"] = 50
+    parameters["PhysicsParams"]["outputRecoveryStateStep"] = 25
     parameters["PhysicsParams"]["boundaryFrictionDynamic"] = 0.1
 
+    # 设置输出格式和优化参数
+    parameters["PhysicsParams"]["outputExt"] = "ply"  # 可以是 "ply" 或 "bin"
     parameters["PhysicsParams"]["useGPU"] = True
-    parameters["CollisionParams"]["restPoseCloestPoint"] = True
-    parameters["PhysicsParams"]["collisionStiffness"] = 2e7
-    parameters["PhysicsParams"]["checkAndUpdateWorldBounds"] = True
+    parameters["PhysicsParams"]["collisionStiffness"] = 1e10
+    parameters["PhysicsParams"]["numSubsteps"] = 2
+    parameters["PhysicsParams"]["iterations"] = 60
 
-    # 输出设置
-    parameters["PhysicsParams"]["saveOutputs"] = True
-    parameters["ViewerParams"] = {"enableViewer": True}
-
-    # 设置物理求解器参数
-    parameters["PhysicsParams"]["numSubsteps"] = 4
-    parameters["PhysicsParams"]["iterations"] = 24
+    # 设置加速器参数
     parameters["PhysicsParams"]["useAccelerator"] = True
-    parameters["PhysicsParams"]["acceleratorRho"] = 0.94
+    parameters["PhysicsParams"]["acceleratorRho"] = 0.9
 
-    # 生成运行参数并执行
+    # 是否保存输出和启用可视化
+    parameters["PhysicsParams"]["saveOutputs"] = True  # 输出文件
+    parameters["ViewerParams"] = {
+        "enableViewer": True  # 启用查看器
+    }
+
+    # 生成实验配置
+    experimentName = "Dragon_Box_Drop"
     cmd = genRunningParameters2(
         machineName,
         genFileName,
         experimentName,
         modelsInfo,
         parameters,
-        exeName=binaryFile,
-        runCommand=run,
-        recoverState=recoveryState,
+        exeName=machines[machineName]["binaryFile"],
+        runCommand=run
     )
