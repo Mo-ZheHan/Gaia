@@ -8,8 +8,8 @@ def getModelInfoDragon(modelExample, materialType="NeoHookean"):
     model['verticesColoringCategoriesPath'] = model['path'] + ".vertexColoring.json"
 
     # 物理材质参数
-    model['miu'] = 1e9
-    model['lmbd'] = 1e10
+    model['miu'] = 35714286
+    model['lmbd'] = 142857143
     model['density'] = 100
 
     if materialType == "NeoHookean":
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # 添加龙模型
     dragon_model = getModelInfoDragon(modelExample)
     dragon_model['scale'] = [1.0, 1.0, 1.0]
-    dragon_model['translation'] = [0, 0.4, 0]
+    dragon_model['translation'] = [0, 0.5, 0]
     dragon_model['initialVelocity'] = [0, 0, 0]
 
     # 添加阻尼和摩擦参数
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     # 设置输出格式和优化参数
     parameters["PhysicsParams"]["outputExt"] = "ply"  # 可以是 "ply" 或 "bin"
     parameters["PhysicsParams"]["useGPU"] = True
-    parameters["PhysicsParams"]["collisionStiffness"] = 1e10
+    parameters["PhysicsParams"]["collisionStiffness"] = 1e7
     parameters["PhysicsParams"]["numSubsteps"] = 2
     parameters["PhysicsParams"]["iterations"] = 60
 
